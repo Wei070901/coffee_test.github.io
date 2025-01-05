@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const apiUrl = window.location.hostname === 'localhost' 
                     ? 'http://localhost:3000' 
-                    : 'https://coffee.up.railway.app';
+                    : 'https://web-production-c39c3.up.railway.app';
 
                 // 構建請求頭
                 const headers = {

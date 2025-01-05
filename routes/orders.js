@@ -62,6 +62,7 @@ router.get('/my-orders', authMiddleware, async (req, res) => {
 router.post('/', async (req, res) => {
     console.log('收到訂單請求 - 開始處理');
     console.log('請求頭:', req.headers);
+    console.log('請求體:', req.body);
     
     try {
         const { items, shippingInfo, paymentMethod } = req.body;
@@ -98,7 +99,7 @@ router.post('/', async (req, res) => {
                     isFirstOrder = orderCount === 0;
                 }
             } catch (error) {
-                console.log('驗證token失敗，視為訪客訂單');
+                console.log('驗證token失敗，視為訪客訂單:', error);
             }
         }
 
