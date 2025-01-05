@@ -169,20 +169,59 @@ router.post('/', async (req, res) => {
 });
 
 // 獲取單個訂單
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
-        const order = await Order.findOne({
-            _id: req.params.id,
-            user: req.user._id
-        }).populate('items.product');
+        const order = await Order.findById(req.params.id)
+            .populate('items.product');
 
         if (!order) {
             return res.status(404).json({ error: '找不到訂單' });
         }
 
-        // 設置 CORS 頭
-        res.header('Access-Control-Allow-Origin', req.headers.origin);
-        res.header('Access-Control-Allow-Credentials', 'true');
+        // 如果訂單屬於會員，需要驗證權限
+        if (order.user) {
+            const token = req.headers.authorization?.replace('Bearer ', '');
+            if (!token) {
+                // 如果沒有提供 token，只返回基本訂單資訊
+                const basicOrderInfo = {
+                    orderNumber: order.orderNumber,
+                    status: order.status,
+                    createdAt: order.createdAt,
+                    totalAmount: order.totalAmount,
+                    items: order.items
+                };
+                return res.json(basicOrderInfo);
+            }
+
+            try {
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                const user = await User.findById(decoded.userId);
+                
+                if (!user || user._id.toString() !== order.user.toString()) {
+                    // 如果用戶不匹配，只返回基本訂單資訊
+                    const basicOrderInfo = {
+                        orderNumber: order.orderNumber,
+                        status: order.status,
+                        createdAt: order.createdAt,
+                        totalAmount: order.totalAmount,
+                        items: order.items
+                    };
+                    return res.json(basicOrderInfo);
+                }
+            } catch (error) {
+                // token 驗證失敗，只返回基本訂單資訊
+                const basicOrderInfo = {
+                    orderNumber: order.orderNumber,
+                    status: order.status,
+                    createdAt: order.createdAt,
+                    totalAmount: order.totalAmount,
+                    items: order.items
+                };
+                return res.json(basicOrderInfo);
+            }
+        }
+
+        // 返回完整訂單資訊
         res.json(order);
     } catch (error) {
         console.error('獲取訂單失敗:', error);
