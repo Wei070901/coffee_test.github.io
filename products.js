@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const apiUrl = window.location.hostname === 'localhost' 
                     ? 'http://localhost:3000/api/products'
-                    : 'https://coffee.up.railway.app/api/products';
+                    : 'https://web-production-c39c3.up.railway.app/api/products';
                 const response = await fetch(apiUrl);
                 const data = await response.json();
                 this.products = data;
