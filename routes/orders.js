@@ -103,8 +103,9 @@ router.post('/', async (req, res) => {
             }
         }
 
-        // 計算訂單總金額
-        let totalAmount = 0;
+        // 計算訂單總金額和折扣
+        let subtotal = 0;
+        let itemDiscount = 0;
         const orderItems = [];
 
         for (const item of items) {
@@ -122,7 +123,13 @@ router.post('/', async (req, res) => {
                 }
 
                 const itemTotal = item.price * item.quantity;
-                totalAmount += itemTotal;
+                subtotal += itemTotal;
+
+                // 計算商品折扣（如果有的話）
+                if (item.name === '咖啡濾掛/包' && item.quantity >= 2) {
+                    const currentItemDiscount = 10 * Math.floor(item.quantity / 2);
+                    itemDiscount += currentItemDiscount;
+                }
 
                 orderItems.push({
                     product: item.productId,
@@ -135,12 +142,18 @@ router.post('/', async (req, res) => {
             }
         }
 
-        // 如果是會員首單，應用九折優惠
-        let discount = 0;
+        // 計算商品折扣後的金額
+        let afterItemDiscount = subtotal - itemDiscount;
+
+        // 如果是會員首單，應用九折優惠（在商品折扣後的金額上計算）
+        let memberDiscount = 0;
         if (user && isFirstOrder) {
-            discount = Math.round(totalAmount * 0.1); // 計算10%折扣
-            totalAmount = totalAmount - discount;
+            memberDiscount = Math.round(afterItemDiscount * 0.1); // 計算10%折扣
+            afterItemDiscount = afterItemDiscount - memberDiscount; // 應用會員折扣
         }
+
+        // 最終總金額
+        const totalAmount = afterItemDiscount;
 
         // 創建訂單
         const timestamp = Date.now();
@@ -152,7 +165,8 @@ router.post('/', async (req, res) => {
             user: user ? user._id : null,
             items: orderItems,
             totalAmount,
-            discount,
+            discount: itemDiscount + memberDiscount, // 總折扣金額
+            memberDiscount, // 會員折扣金額
             shippingInfo,
             paymentMethod,
             status: 'pending'

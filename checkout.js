@@ -23,8 +23,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
 
+            // 計算商品折扣後的金額
+            let afterDiscount = subtotal - discount;
+
             // 檢查是否為會員首單
             let memberDiscount = 0;
+            let isMemberFirstOrder = false;
             const token = localStorage.getItem('token');
             if (token) {
                 try {
@@ -41,9 +45,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (response.ok) {
                         const orders = await response.json();
                         if (orders.length === 0) {
-                            // 是首單，計算10%折扣
-                            memberDiscount = Math.round(subtotal * 0.1);
-                            discount += memberDiscount;
+                            // 是首單，計算會員折扣（商品折扣後的金額再打9折）
+                            isMemberFirstOrder = true;
+                            memberDiscount = Math.round(afterDiscount * 0.1); // 計算10%折扣
+                            afterDiscount = afterDiscount - memberDiscount; // 應用會員折扣
                         }
                     }
                 } catch (error) {
@@ -52,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // 計算總計
-            const total = subtotal + shipping - discount;
+            const total = afterDiscount + shipping;
 
             // 更新側邊欄訂單摘要
             const sidebarOrderItems = document.getElementById('sidebarOrderItems');
@@ -71,8 +76,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // 更新折扣顯示
                 const discountElement = document.getElementById('sidebarDiscount');
                 if (discountElement) {
-                    let discountText = `NT$ ${discount}`;
-                    if (memberDiscount > 0) {
+                    let totalDiscount = discount + memberDiscount;
+                    let discountText = `NT$ ${totalDiscount}`;
+                    if (isMemberFirstOrder) {
                         discountText += ' (含會員首單9折優惠)';
                     }
                     discountElement.textContent = discountText;
@@ -98,10 +104,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 <span>小計</span>
                                 <span>NT$ ${subtotal}</span>
                             </div>
+                            ${discount > 0 ? `
                             <div class="discount">
-                                <span>折扣${memberDiscount > 0 ? ' (含會員首單9折優惠)' : ''}</span>
+                                <span>商品折扣</span>
                                 <span>NT$ ${discount}</span>
                             </div>
+                            ` : ''}
+                            ${memberDiscount > 0 ? `
+                            <div class="member-discount">
+                                <span>會員首單9折優惠</span>
+                                <span>NT$ ${memberDiscount}</span>
+                            </div>
+                            ` : ''}
                             <div class="shipping">
                                 <span>運費</span>
                                 <span>NT$ ${shipping}</span>
