@@ -143,7 +143,12 @@ router.post('/', async (req, res) => {
         }
 
         // 創建訂單
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const orderNumber = `CF${timestamp}-${randomStr}`;
+
         const order = new Order({
+            orderNumber,
             user: user ? user._id : null,
             items: orderItems,
             totalAmount,
