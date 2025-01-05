@@ -1,10 +1,10 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     const steps = document.querySelectorAll('.step');
     let currentStep = 1;
     let customerData = {};
 
     // 初始化訂單資料
-    function initializeOrderData() {
+    async function initializeOrderData() {
         try {
             // 從 localStorage 獲取購物車資料
             const cart = JSON.parse(localStorage.getItem('cartItems')) || [];
@@ -23,6 +23,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
+            // 檢查是否為會員首單
+            let memberDiscount = 0;
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const apiUrl = window.location.hostname === 'localhost' 
+                        ? 'http://localhost:3000' 
+                        : 'https://web-production-c39c3.up.railway.app';
+
+                    const response = await fetch(`${apiUrl}/api/orders/my-orders`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const orders = await response.json();
+                        if (orders.length === 0) {
+                            // 是首單，計算10%折扣
+                            memberDiscount = Math.round(subtotal * 0.1);
+                            discount += memberDiscount;
+                        }
+                    }
+                } catch (error) {
+                    console.error('檢查會員訂單狀態失敗:', error);
+                }
+            }
+
             // 計算總計
             const total = subtotal + shipping - discount;
 
@@ -39,7 +67,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 更新小計、折扣和總計
                 document.getElementById('sidebarSubtotal').textContent = `NT$ ${subtotal}`;
                 document.getElementById('sidebarTotal').textContent = `NT$ ${total}`;
-                document.getElementById('sidebarDiscount').textContent = `NT$ ${discount}`;
+                
+                // 更新折扣顯示
+                const discountElement = document.getElementById('sidebarDiscount');
+                if (discountElement) {
+                    let discountText = `NT$ ${discount}`;
+                    if (memberDiscount > 0) {
+                        discountText += ' (含會員首單9折優惠)';
+                    }
+                    discountElement.textContent = discountText;
+                }
             }
 
             // 更新確認頁面的訂單摘要
@@ -62,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <span>NT$ ${subtotal}</span>
                             </div>
                             <div class="discount">
-                                <span>折扣</span>
+                                <span>折扣${memberDiscount > 0 ? ' (含會員首單9折優惠)' : ''}</span>
                                 <span>NT$ ${discount}</span>
                             </div>
                             <div class="shipping">
@@ -84,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 初始化頁面
-    initializeOrderData();
+    await initializeOrderData();
 
     // 下一步按鈕事件
     document.querySelectorAll('.next-step-btn').forEach(button => {
