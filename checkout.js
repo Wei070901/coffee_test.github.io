@@ -298,37 +298,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             const cart = JSON.parse(localStorage.getItem('cartItems') || '[]');
             
-            // 計算折扣
-            let discount = 0;
+            // 計算商品折扣
+            let itemDiscount = 0;
             cart.forEach(item => {
                 if (item.name === '咖啡濾掛/包' && item.quantity >= 2) {
-                    const itemDiscount = 10 * Math.floor(item.quantity / 2);
-                    discount += itemDiscount;
+                    const currentItemDiscount = 10 * Math.floor(item.quantity / 2);
+                    itemDiscount += currentItemDiscount;
                 }
             });
 
-            // 計算每個商品的最終價格
-            const itemsWithDiscountedPrice = cart.map(item => {
-                let itemDiscount = 0;
-                if (item.name === '咖啡濾掛/包' && item.quantity >= 2) {
-                    itemDiscount = 10 * Math.floor(item.quantity / 2);
-                }
-                
-                // 計算該商品的總價
-                const totalItemPrice = item.price * item.quantity;
-                // 計算折扣後的單價
-                const discountedPrice = (totalItemPrice - itemDiscount) / item.quantity;
-                
-                return {
-                    productId: item.id,
-                    name: item.name,
-                    quantity: parseInt(item.quantity) || 1,
-                    price: discountedPrice // 使用折扣後的單價
-                };
-            });
+            // 提交原始價格，讓後端處理所有折扣計算
+            const items = cart.map(item => ({
+                productId: item.id,
+                name: item.name,
+                quantity: parseInt(item.quantity) || 1,
+                price: item.price // 使用原始價格
+            }));
 
             const orderData = {
-                items: itemsWithDiscountedPrice,
+                items: items,
                 shippingInfo: {
                     name: customerData.name,
                     phone: customerData.phone,
